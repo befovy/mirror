@@ -8,16 +8,6 @@ import (
 	"github.com/baishuai/mirror"
 )
 
-// https://developer.github.com/v4/explorer/
-var query struct {
-	Viewer struct {
-		Login     githubql.String
-		CreatedAt githubql.DateTime
-	}
-}
-
-var issueCount mirror.IssueSummary
-
 func HandleOneIssue(number githubql.Int) {
 
 }
@@ -30,30 +20,25 @@ func main() {
 	client := githubql.NewClient(httpClient)
 
 	var err error
-	err = client.Query(context.Background(), &query, nil)
-	if err != nil {
-		// Handle error.
-		spew.Dump(err)
-		return
-	}
-	fmt.Println("    Login:", query.Viewer.Login)
-	fmt.Println("CreatedAt:", query.Viewer.CreatedAt)
 
 	variables := map[string]interface{}{
 		"owner":  githubql.String("baishuai"),
 		"name":   githubql.String("mirror"),
-		"states": []githubql.IssueState{githubql.IssueStateOpen},
+		"states": []githubql.IssueState{githubql.IssueStateClosed},
+		"after":  (*githubql.String)(nil),
 	}
 
-	err = client.Query(context.Background(), &issueCount, variables)
+	var issueInRepo mirror.IssueInRepo
+
+	err = client.Query(context.Background(), &issueInRepo, variables)
 	if err != nil {
 		// Handle error.
 		spew.Dump(err)
 	}
-	fmt.Println("issueRepositoryName:", issueCount.Rspository.Name)
-	fmt.Println("issueCount:", issueCount.Rspository.Issues.TotalCount)
+	fmt.Println("issueRepositoryName:", issueInRepo.Repository.Name)
+	fmt.Println("issueCount:", issueInRepo.Repository.Issues.TotalCount)
 
-	fmt.Println(issueCount.Rspository.CreatedAt.String())
+	fmt.Println(issueInRepo.Repository.CreatedAt.String())
 
-	//spew.Dump(issueCount)
+	spew.Dump(issueInRepo)
 }
