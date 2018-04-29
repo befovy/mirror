@@ -11,6 +11,9 @@ import (
 
 func HandleIsues(path string, issues []Issue) {
 	for _, issue := range issues {
+		if !issue.ViewerDidAuthor {
+			continue
+		}
 		err := handleOne(path, issue)
 		if err != nil {
 			fmt.Println(err.Error())
