@@ -2,14 +2,15 @@ package mirror
 
 import (
 	"bufio"
-	"os"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 	"unicode"
 )
 
-func HandleIsues(path string, issues []Issue) {
+func HandleIsues(path string, issues []Issue) (int, int) {
+	succeed, failed := 0, 0
 	for _, issue := range issues {
 		if !issue.ViewerDidAuthor {
 			continue
@@ -17,8 +18,12 @@ func HandleIsues(path string, issues []Issue) {
 		err := handleOne(path, issue)
 		if err != nil {
 			fmt.Println(err.Error())
+			failed += 1
+		} else {
+			succeed += 1
 		}
 	}
+	return succeed, failed
 }
 
 func exist(filename string) bool {

@@ -14,6 +14,7 @@
 .glide/
 .idea/
 
-./config.yaml
+config.yaml
+mirror.yaml
 
 vendor/

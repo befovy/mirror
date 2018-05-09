@@ -1,9 +1,9 @@
 package mirror
 
 import (
-	"os"
-	"io"
 	"gopkg.in/yaml.v2"
+	"io"
+	"os"
 )
 
 type Config struct {
@@ -25,5 +25,5 @@ func NewConfigWithReader(in io.Reader) (*Config, error) {
 	decoder := yaml.NewDecoder(in)
 	var config Config
 	err := decoder.Decode(&config)
-	return &config, err;
+	return &config, err
 }

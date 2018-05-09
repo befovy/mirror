@@ -16,7 +16,7 @@ type IssueInRepo struct {
 		Name        githubql.String
 		Description githubql.String
 		CreatedAt   githubql.DateTime
-		Issues struct {
+		Issues      struct {
 			TotalCount githubql.Int
 			Nodes      []Issue
 			PageInfo   PageInfo
@@ -25,7 +25,11 @@ type IssueInRepo struct {
 }
 
 func (i *IssueInRepo) HasNextPage() bool {
-	return (bool)(i.Repository.Issues.PageInfo.HasNextPage);
+	return (bool)(i.Repository.Issues.PageInfo.HasNextPage)
+}
+
+func (i *IssueInRepo) NextCursor() githubql.String {
+	return i.Repository.Issues.PageInfo.EndCursor
 }
 
 func (i *IssueInRepo) Issues() []Issue {
@@ -39,7 +43,7 @@ type IssueEdge struct {
 
 type Issue struct {
 	CreatedAt githubql.DateTime
-	Author struct {
+	Author    struct {
 		Login githubql.String
 	}
 	Number          githubql.Int
@@ -71,10 +75,12 @@ func (i *Issue) IsPost() bool {
 	return i.hasMirrorLabel("POST")
 }
 
+const mirrorLabelTag = "__mirror__"
+
 func (i *Issue) hasMirrorLabel(tag string) bool {
 	post := false
 	for _, label := range i.Labels.Nodes {
-		if string(label.Name) == tag && label.Description == "$$@@" {
+		if string(label.Name) == tag && string(label.Description) == mirrorLabelTag {
 			post = true
 			break
 		}
@@ -85,7 +91,7 @@ func (i *Issue) hasMirrorLabel(tag string) bool {
 func (i *Issue) RealLabels() []Label {
 	labels := make([]Label, 0)
 	for _, l := range i.Labels.Nodes {
-		if l.Description != "$$@@" {
+		if string(l.Description) != mirrorLabelTag {
 			labels = append(labels, l)
 		}
 	}
@@ -94,7 +100,6 @@ func (i *Issue) RealLabels() []Label {
 
 type Label struct {
 	//Color       githubql.String
-	//Description githubql.String
 	//IsDefault   githubql.Boolean
 	Name        githubql.String
 	Description githubql.String

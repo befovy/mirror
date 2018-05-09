@@ -6,6 +6,8 @@
 ## mirror 配置文件
 
 mirror 使用 yaml 格式的配置文件， 参考 [conf.yaml](./conf.yaml)
+mirror 查找运行目录下的mirror.yaml 作为配置文件
+
 具体的配置内容有
 
 - token: github token, 需要有 issue 读取权限

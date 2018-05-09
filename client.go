@@ -1,8 +1,8 @@
 package mirror
 
 import (
-	"net/http"
 	"errors"
+	"net/http"
 )
 
 //type Transport struct {
@@ -19,7 +19,7 @@ import (
 //}
 //
 
-func NewCLient(token string) *http.Client {
+func NewClient(token string) *http.Client {
 	return &http.Client{
 		Transport: &Transport{
 			token: token,
