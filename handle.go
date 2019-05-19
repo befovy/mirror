@@ -27,6 +27,9 @@ func HandleIsues(path string, issues []Issue) (int, int) {
 		if !issue.ViewerDidAuthor {
 			continue
 		}
+		if !issue.Closed {
+			continue
+		}
 		err := handleOne(path, issue)
 		if err != nil {
 			fmt.Println(err.Error())
