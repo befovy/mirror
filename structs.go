@@ -56,6 +56,7 @@ type Issue struct {
 	Title           githubql.String
 	UpdatedAt       githubql.DateTime
 	ViewerDidAuthor githubql.Boolean
+	ResourcePath    githubql.URI
 
 	Labels struct {
 		TotalCount githubql.Int

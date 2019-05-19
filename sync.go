@@ -3,6 +3,7 @@ package mirror
 import (
 	"context"
 	"fmt"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/shurcooL/githubql"
 )
@@ -26,7 +27,7 @@ func SyncWithConfig(config *Config) {
 	variables := map[string]interface{}{
 		"owner":  githubql.String(config.Login),
 		"name":   githubql.String(config.Repo),
-		"states": []githubql.IssueState{githubql.IssueStateClosed},
+		"states": []githubql.IssueState{githubql.IssueStateClosed, githubql.IssueStateOpen},
 		"after":  (*githubql.String)(nil),
 	}
 
@@ -38,6 +39,8 @@ func SyncWithConfig(config *Config) {
 		if err != nil {
 			fmt.Println(err.Error())
 		}
+		fmt.Printf("Get %d issues in page.\n", issueInRepo.Repository.Issues.TotalCount)
+		fmt.Println(issueInRepo.Repository.CreatedAt)
 		s, f := HandleIsues(config.Output, issueInRepo.Issues())
 		succeed += s
 		failed += f

@@ -9,6 +9,18 @@ import (
 	"unicode"
 )
 
+type errWriter struct {
+	err error
+	w   *bufio.Writer
+}
+
+func (ew *errWriter) WriteString(buf string) {
+	if ew.err != nil {
+		return
+	}
+	_, ew.err = ew.w.WriteString(buf)
+}
+
 func HandleIsues(path string, issues []Issue) (int, int) {
 	succeed, failed := 0, 0
 	for _, issue := range issues {
@@ -52,15 +64,22 @@ func handleOne(filepath string, issue Issue) error {
 		}
 	}
 
-	defer f.Close()
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("got error: ", r)
+		}
+	}()
 
 	wf := bufio.NewWriter(f)
-	wf.WriteString("---\n")
-	wf.WriteString(fmt.Sprintf("title: \"%s\"\n", issue.Title))
-	wf.WriteString(fmt.Sprintf("date: %s\n", issue.CreatedAt.String()))
-	wf.WriteString("---\n")
-	wf.WriteString(string(issue.Body))
+	ew := &errWriter{w: wf}
 
+	ew.WriteString("---\n")
+	ew.WriteString(fmt.Sprintf("title: \"%s\"\n", issue.Title))
+	ew.WriteString(fmt.Sprintf("date: %s\n", issue.CreatedAt.String()))
+	ew.WriteString("---\n")
+	ew.WriteString(string(issue.Body))
+	ew.WriteString("\n")
+	ew.WriteString("\n")
 	for _, comment := range issue.Comments.Nodes {
 		if !comment.ViewerDidAuthor {
 			continue
@@ -68,10 +87,31 @@ func handleOne(filepath string, issue Issue) error {
 		body := strings.TrimLeftFunc(string(comment.Body), unicode.IsSpace)
 		if !strings.HasPrefix(body, "<!-") {
 			continue
+		} else {
+			bodyLines := strings.SplitN(body, "\n", 2)
+			if len(bodyLines) == 2 {
+				body = bodyLines[1]
+			}
 		}
-		wf.WriteString(body)
+		ew.WriteString(body)
+		ew.WriteString("\n")
+		ew.WriteString("\n")
 	}
 
-	wf.Flush()
-	return nil
+	ew.WriteString(fmt.Sprintf("> 本文通过 mirror 和 hugo 生成，原始地址 https://github.com%s", issue.ResourcePath.String()))
+
+	if ew.err != nil {
+		fmt.Printf("Write err %s\n", ew.err.Error())
+		err = ew.err
+	} else {
+		err = wf.Flush()
+	}
+
+	if err == nil {
+		err = f.Close()
+	} else {
+		_ = f.Close()
+	}
+
+	return err
 }
