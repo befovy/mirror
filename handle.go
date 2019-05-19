@@ -27,9 +27,6 @@ func HandleIsues(path string, issues []Issue) (int, int) {
 		if !issue.ViewerDidAuthor {
 			continue
 		}
-		if !issue.Closed {
-			continue
-		}
 		err := handleOne(path, issue)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -79,6 +76,10 @@ func handleOne(filepath string, issue Issue) error {
 	ew.WriteString("---\n")
 	ew.WriteString(fmt.Sprintf("title: \"%s\"\n", issue.Title))
 	ew.WriteString(fmt.Sprintf("date: %s\n", issue.CreatedAt.String()))
+	ew.WriteString(fmt.Sprintf("lastmod: %s\n", issue.LastEditedAt.String()))
+	if !issue.Closed {
+		ew.WriteString("draft: true\n")
+	}
 	ew.WriteString("---\n")
 	ew.WriteString(string(issue.Body))
 	ew.WriteString("\n")
