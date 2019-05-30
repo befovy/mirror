@@ -1,4 +1,4 @@
-package mirror
+package issues
 
 import (
 	"bufio"
@@ -44,7 +44,7 @@ func exist(filename string) bool {
 }
 
 func handleOne(filepath string, issue Issue) error {
-	filename := fmt.Sprintf("%s_%d.md", issue.CreatedAt.Format("2006-Jan-_2"), issue.Number)
+	filename := fmt.Sprintf("%s_%d.md", issue.CreatedAt.Format("20060102"), issue.Number)
 
 	if !issue.IsPage() {
 		filepath = path.Join(filepath, "post")

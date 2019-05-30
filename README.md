@@ -1,6 +1,10 @@
 # Mirror
 
-同步 github issues 内容，并输出为 hugo 可构建的博客内容
+同步github issues、yuque（in progressing）上的内容，输出为 hugo 博客站点的构建内容
+
+
+
+<!--同步 github issues 内容，并输出为 hugo 可构建的博客内容-->
 
 
 ## mirror 配置文件

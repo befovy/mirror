@@ -1,4 +1,4 @@
-package mirror
+package issues
 
 import (
 	"github.com/shurcooL/githubql"

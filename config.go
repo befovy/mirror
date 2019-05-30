@@ -2,28 +2,23 @@ package mirror
 
 import (
 	"gopkg.in/yaml.v2"
-	"io"
-	"os"
+	"io/ioutil"
 )
 
-type Config struct {
-	Token  string
-	Login  string
-	Repo   string
-	Output string
+type SourceConfig struct {
+	Type   string                 `yaml:"type"`
+	Config map[string]interface{} `yaml:"config"`
 }
 
-func NewConfig(filename string) (*Config, error) {
-	f, err := os.Open(filename)
+func NewConfig(filename string) ([]SourceConfig, error) {
+
+	buffer, err := ioutil.ReadFile(filename)
+
 	if err != nil {
 		return nil, err
 	}
-	return NewConfigWithReader(f)
-}
+	var sc []SourceConfig
 
-func NewConfigWithReader(in io.Reader) (*Config, error) {
-	decoder := yaml.NewDecoder(in)
-	var config Config
-	err := decoder.Decode(&config)
-	return &config, err
+	err = yaml.Unmarshal(buffer, &sc)
+	return sc, err
 }

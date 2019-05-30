@@ -1,4 +1,13 @@
-token: 7a07773fsdfsdf717b1sfds0ae06dddd52c8b2dddd
-login: baishuai
-repo: baishuai.github.io
-output: /Users/helloworld/iBlog/content
+- type: issues
+  config:
+    token: 7a07773fsdfsdf717b1sfds0ae06dddd52c8b2dddd
+    login: befovy
+    repo: befovy.github.io
+    output: /Users/befovy/blog/content
+
+- type: yuque
+  config:
+    token: 7a07773fsdfsdf717b1sfds0ae06dddd52c8b2dddd
+    login: befovy
+    output: /Users/befovy/blog/content
+

@@ -1,54 +1,39 @@
 package mirror
 
 import (
-	"context"
 	"fmt"
-
 	"github.com/davecgh/go-spew/spew"
-	"github.com/shurcooL/githubql"
 )
 
 func Sync() {
-	config, err := NewConfig("./mirror.yaml")
+	configs, err := NewConfig("./mirror.yaml")
 	if err != nil {
 		spew.Dump(err)
 		fmt.Println(err.Error())
 	} else {
-		SyncWithConfig(config)
+		for _, config := range configs {
+			SyncWithConfig(config)
+		}
 	}
 }
 
-func SyncWithConfig(config *Config) {
+var handlers map[string]func(config SourceConfig)
 
-	httpClient := NewClient(config.Token)
+//var sources map[string]func(config SourceConfig) Source
 
-	client := githubql.NewClient(httpClient)
+func RegsiterSource(name string, handle func(config SourceConfig)) {
+	if handlers == nil {
+		handlers = make(map[string]func(config SourceConfig))
+	}
+	handlers[name] = handle
+}
 
-	variables := map[string]interface{}{
-		"owner":  githubql.String(config.Login),
-		"name":   githubql.String(config.Repo),
-		"states": []githubql.IssueState{githubql.IssueStateClosed, githubql.IssueStateOpen},
-		"after":  (*githubql.String)(nil),
+func SyncWithConfig(config SourceConfig) {
+
+	if handle, found := handlers[config.Type]; found {
+		handle(config)
+	} else {
+		fmt.Printf("Unknown source type %s", config.Type)
 	}
 
-	var issueInRepo IssueInRepo
-	succeed, failed := 0, 0
-	for true {
-		err := client.Query(context.Background(), &issueInRepo, variables)
-
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		fmt.Printf("Get %d issues in page.\n", issueInRepo.Repository.Issues.TotalCount)
-		fmt.Println(issueInRepo.Repository.CreatedAt)
-		s, f := HandleIsues(config.Output, issueInRepo.Issues())
-		succeed += s
-		failed += f
-		if !issueInRepo.HasNextPage() {
-			break
-		}
-		variables["after"] = issueInRepo.NextCursor()
-	}
-
-	fmt.Printf("Mirror finished, with %d sueeccd and %d failed\n", succeed, failed)
 }
