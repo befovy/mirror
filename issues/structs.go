@@ -20,7 +20,7 @@ type IssueInRepo struct {
 			TotalCount githubql.Int
 			Nodes      []Issue
 			PageInfo   PageInfo
-		} `graphql:"issues(first: 100, after: $after, states: $states)"`
+		} `graphql:"issues(first: $first, after: $after, states: $states)"`
 	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 
@@ -42,8 +42,8 @@ type IssueEdge struct {
 }
 
 type Issue struct {
-	CreatedAt githubql.DateTime
-	Author    struct {
+	ICreatedAt githubql.DateTime `graphql:"createdAt"`
+	Author     struct {
 		Login githubql.String
 	}
 	Number          githubql.Int
@@ -53,8 +53,8 @@ type Issue struct {
 	Locked          githubql.Boolean
 	PublishedAt     githubql.DateTime
 	State           githubql.IssueState
-	Title           githubql.String
-	UpdatedAt       githubql.DateTime
+	ITitle          githubql.String   `graphql:"title"`
+	IUpdatedAt      githubql.DateTime `graphql:"updatedAt"`
 	ViewerDidAuthor githubql.Boolean
 	ResourcePath    githubql.URI
 
