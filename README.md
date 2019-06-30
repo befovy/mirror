@@ -3,23 +3,27 @@
 同步github issues、yuque（in progressing）上的内容，输出为 hugo 博客站点的构建内容
 
 
-
 <!--同步 github issues 内容，并输出为 hugo 可构建的博客内容-->
 
 
 ## mirror 配置文件
 
-mirror 使用 yaml 格式的配置文件， 参考 [conf.yaml](./conf.yaml)
-mirror 查找运行目录下的mirror.yaml 作为配置文件
 
-具体的配置内容有
+
+mirror 的配置文件使用 yaml 格式， 参考 [conf.yaml](./conf.yaml)  
+mirror 查找运行目录下的mirror.yaml 作为输入配置文件
+
+配置文件中可定义多个内容来源。 每一种不同的内容来源，都有其具体的配置项。
+
+内容来源 "issues" 具体的配置内容有
 
 - token: github token, 需要有 issue 读取权限
 - login: github username
-- repo:  要抓取的issue 所在的 repo 名称
-- output:  转换成 hugo 博客内容后的本地输出目录，建议指定为 hugo 博客的 content 目录
+- repo:  要抓取的 issue 所在的 repo 名称
+- prefix: 输出文件名的统一前缀
+- output: 转换成 hugo 博客内容后的本地输出目录，建议指定为 hugo 博客的 content 目录
 
-## mirror 规则
+## 内容来源 Issue 的抓取规则
 
 ### draft
 
