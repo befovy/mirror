@@ -256,7 +256,7 @@ func (ie *IssueEdge) Content() string {
 		}
 
 		body := strings.TrimLeftFunc(string(comment.Body), unicode.IsSpace)
-		if !strings.HasPrefix(body, "<!-") {
+		if !strings.HasPrefix(body, "<!--mirror-->") {
 			continue
 		} else {
 			ew.writeString(body)

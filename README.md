@@ -37,7 +37,7 @@ issue 本身有 body 和 comment。 新建issue时的内容是body， 之后所�
 Mirror 支持将 Issue body 和 comment 都抓取下来余与body部分拼接合并作为完整博客内容。
 
 由于 Issue 都是公开的，可能会被别人评论，作者还可能回复提问者。
-为了区分这种情况，mirror 只拼接 comment 作者是项目作者本人， 且在 comment 开头有一句 html `<!--->` 注释语句的comment。
+为了区分这种情况，mirror 只拼接 comment 作者是项目作者本人， 且在 comment 开头有一句 html `<!--mirror-->` 注释语句的comment。
 
 
 ## Run
