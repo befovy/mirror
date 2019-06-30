@@ -3,6 +3,7 @@
     token: 7a07773fsdfsdf717b1sfds0ae06dddd52c8b2dddd
     login: befovy
     repo: befovy.github.io
+    prefix: prefix_for_filename
     output: /Users/befovy/blog/content
 
 - type: yuque

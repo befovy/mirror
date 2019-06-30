@@ -8,6 +8,7 @@ import (
 	"github.com/shurcooL/githubql"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 	"time"
 	"unicode"
@@ -34,43 +35,48 @@ type errWriter struct {
 	w   io.StringWriter
 }
 
-func (ew *errWriter) WriteString(buf string) {
+func (ew *errWriter) writeString(buf string) {
 	if ew.err != nil {
 		return
 	}
 	_, ew.err = ew.w.WriteString(buf)
 }
 
-type issues struct {
+type issueSource struct {
 	login  string
 	repo   string
 	output string
-
+	prefix string
 	client *githubql.Client
 
-	issues  []Issue
+	posts   []IssueEdge
 	after   githubql.String
 	hasNext bool
+
+	lastPostCur githubql.String
 }
 
-func (is *issues) nextIsue() *Issue {
+func (is *issueSource) nextPage(now *IssueEdge) *IssueEdge {
 	if is == nil {
 		return nil
 	}
-
-	if is.hasNext && (is.issues == nil || len(is.issues) == 0) {
-
+	if now != nil {
+		is.lastPostCur = now.Cursor
+	}
+	if is.hasNext && (is.posts == nil || len(is.posts) == 0) {
 		var after interface{}
 		after = (*githubql.String)(nil)
 		if len(is.after) > 0 {
 			after = is.after
 		}
 		variables := map[string]interface{}{
-			"owner":  githubql.String(is.login),
-			"first":  githubql.Int(100),
-			"name":   githubql.String(is.repo),
-			"states": []githubql.IssueState{githubql.IssueStateClosed, githubql.IssueStateOpen},
-			"after":  after,
+			"owner":   githubql.String(is.login),
+			"first":   githubql.Int(100),
+			"name":    githubql.String(is.repo),
+			"states":  []githubql.IssueState{githubql.IssueStateClosed, githubql.IssueStateOpen},
+			"after":   after,
+			"csFirst": githubql.Int(100),
+			"csAfter": (*githubql.String)(nil),
 		}
 
 		var issueInRepo IssueInRepo
@@ -78,39 +84,102 @@ func (is *issues) nextIsue() *Issue {
 		err := is.client.Query(context.Background(), &issueInRepo, variables)
 
 		if err != nil {
+			fmt.Println(err.Error())
 			return nil
 		}
 
-		is.hasNext = issueInRepo.HasNextPage()
-		is.after = issueInRepo.NextCursor()
-		is.issues = issueInRepo.Issues()
+		is.hasNext = issueInRepo.hasNextPage()
+		is.after = issueInRepo.nextCursor()
+		is.posts = issueInRepo.issueEdges()
 	}
 
-	if is.issues != nil && len(is.issues) > 0 {
-		issue := is.issues[0]
-		is.issues = is.issues[1:]
+	if is.posts != nil && len(is.posts) > 0 {
+		issue := is.posts[0]
+		is.posts = is.posts[1:]
 		return &issue
 	}
 	return nil
 }
 
-func (is *issues) Next() mirror.Post {
-	var issue *Issue
+func (is *issueSource) Next() mirror.Post {
+	var issue *IssueEdge = nil
 	for true {
-		issue = is.nextIsue()
+		pre := issue
+		issue = is.nextPage(pre)
 		if issue == nil {
 			break
 		}
 
-		if !issue.Closed {
+		if !issue.Node.Closed {
 			continue
 		}
+		if !issue.Node.ViewerDidAuthor {
+			continue
+		}
+
+		is.getAllComment4IssueEdge(issue)
 		break
 	}
 	return issue
 }
 
-func issuehandler(config mirror.SourceConfig) mirror.Source {
+func (is *issueSource) FileName(post mirror.Post) string {
+	ie, ok := post.(*IssueEdge)
+	if !ok {
+		return ""
+	}
+	fname := fmt.Sprintf("%s_%s_%d.md", is.prefix, ie.Node.CreatedAt.Format("20060102"), ie.Node.Number)
+	return path.Join(is.output, fname)
+}
+
+func (is *issueSource) getAllComment4IssueEdge(ie *IssueEdge) {
+	if ie == nil || ie.Node.Comments.PageInfo.HasNextPage == false {
+		return
+	}
+
+	for {
+		if !ie.Node.Comments.PageInfo.HasNextPage {
+			break
+		}
+
+		var after interface{}
+		after = (*githubql.String)(nil)
+		if len(is.lastPostCur) > 0 {
+			after = is.lastPostCur
+		}
+
+		variables := map[string]interface{}{
+			"owner":   githubql.String(is.login),
+			"first":   githubql.Int(1),
+			"name":    githubql.String(is.repo),
+			"states":  []githubql.IssueState{githubql.IssueStateClosed, githubql.IssueStateOpen},
+			"after":   after,
+			"csFirst": githubql.Int(100),
+			"csAfter": ie.Node.Comments.PageInfo.EndCursor,
+		}
+
+		var issueInRepo IssueInRepo
+		err := is.client.Query(context.Background(), &issueInRepo, variables)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+
+		if len(issueInRepo.Repository.Issues.Edges) != 1 {
+			return
+		}
+
+		issueEdge := issueInRepo.Repository.Issues.Edges[0]
+
+		ie.Node.Comments.PageInfo.HasNextPage = issueEdge.Node.Comments.PageInfo.HasNextPage
+		ie.Node.Comments.PageInfo.EndCursor = issueEdge.Node.Comments.PageInfo.EndCursor
+		ie.Node.Comments.Nodes = append(ie.Node.Comments.Nodes, issueEdge.Node.Comments.Nodes...)
+
+	}
+}
+
+func issueHandler(config mirror.SourceConfig) mirror.Source {
 
 	data := config.Config
 
@@ -139,47 +208,49 @@ func issuehandler(config mirror.SourceConfig) mirror.Source {
 		return nil
 	}
 
+	prefix, ok := data["prefix"].(string)
+	if !ok || len(prefix) == 0 {
+		return nil
+	}
+
 	client := githubql.NewClient(httpClient)
 
-	return &issues{
+	return &issueSource{
 		login:   login,
 		repo:    repo,
 		output:  output,
 		client:  client,
+		prefix:  prefix,
 		hasNext: true,
 	}
 }
 
-func (i *Issue) FileName() string {
-	return fmt.Sprintf("issues_%s_%d.md", i.ICreatedAt.Format("20060102"), i.Number)
+func (ie *IssueEdge) Title() string {
+	return string(ie.Node.Title)
 }
 
-func (i *Issue) Title() string {
-	return string(i.ITitle)
-}
-
-func (i *Issue) Tags() []string {
+func (ie *IssueEdge) Tags() []string {
 	return nil
 }
 
-func (i *Issue) CreatedAt() time.Time {
-	return i.ICreatedAt.Time
+func (ie *IssueEdge) CreatedAt() time.Time {
+	return ie.Node.CreatedAt.Time
 }
 
-func (i *Issue) UpdatedAt() time.Time {
-	return i.IUpdatedAt.Time
+func (ie *IssueEdge) UpdatedAt() time.Time {
+	return ie.Node.UpdatedAt.Time
 }
 
-func (i *Issue) Content() string {
+func (ie *IssueEdge) Content() string {
 	sb := new(strings.Builder)
 
 	ew := &errWriter{w: sb}
 
-	ew.WriteString(string(i.Body))
-	ew.WriteString("\n")
-	ew.WriteString("\n")
+	ew.writeString(string(ie.Node.Body))
+	ew.writeString("\n")
+	ew.writeString("\n")
 
-	for _, comment := range i.Comments.Nodes {
+	for _, comment := range ie.Node.Comments.Nodes {
 		if !comment.ViewerDidAuthor {
 			continue
 		}
@@ -188,12 +259,14 @@ func (i *Issue) Content() string {
 		if !strings.HasPrefix(body, "<!-") {
 			continue
 		} else {
-			ew.WriteString(body)
-			ew.WriteString("\n")
-			ew.WriteString("\n")
+			ew.writeString(body)
+			ew.writeString("\n")
+			ew.writeString("\n")
 		}
-		ew.WriteString(fmt.Sprintf("> 本文通过 mirror 和 hugo 生成，原始地址 https://github.com%s", i.ResourcePath.String()))
+
 	}
+	ew.writeString("\n")
+	ew.writeString(fmt.Sprintf("> 本文通过 mirror 和 hugo 生成，原始地址 https://github.com%s", ie.Node.ResourcePath.String()))
 
 	if ew.err != nil {
 		fmt.Printf("Write err %s\n", ew.err.Error())
@@ -204,5 +277,5 @@ func (i *Issue) Content() string {
 
 func init() {
 	fmt.Println("regist issue source")
-	mirror.RegsiterSource("issues", issuehandler)
+	mirror.RegsiterSource("issues", issueHandler)
 }

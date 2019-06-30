@@ -9,8 +9,17 @@ import (
 	"strings"
 )
 
+// Read Sync Config from file `./mirror.yaml`,
+// Then run sync process to get content from the config source
 func Sync() {
-	configs, err := newConfig("./mirror.yaml")
+	SyncWithConfig("./mirror.yaml")
+}
+
+
+// Read Sync Config from `configfile`,
+// Then run sync process to get content from the config source
+func SyncWithConfig(configfile string) {
+	configs, err := newConfig(configfile)
 	if err != nil {
 		spew.Dump(err)
 		fmt.Println(err.Error())
@@ -23,8 +32,10 @@ func Sync() {
 
 var handlers map[string]func(config SourceConfig) Source
 
-//var sources map[string]func(config SourceConfig) Source
 
+// A source handler return an instance of Source interface according the SourceConfig.
+// The sync process find a handler by name firstly, then iterate the `Post` in the `Source`,
+// output post to a specified location.
 func RegsiterSource(name string, handle func(config SourceConfig) Source) {
 	if handlers == nil {
 		handlers = make(map[string]func(config SourceConfig) Source)
@@ -33,10 +44,12 @@ func RegsiterSource(name string, handle func(config SourceConfig) Source) {
 }
 
 func syncWithConfig(config SourceConfig) {
-
 	if handle, found := handlers[config.Type]; found {
 		source := handle(config)
-		syncSource(source)
+		err := syncSource(source)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	} else {
 		fmt.Printf("Unknown source type %s", config.Type)
 	}
@@ -52,7 +65,7 @@ type errWriter struct {
 	w   *bufio.Writer
 }
 
-func (ew *errWriter) WriteString(buf string) {
+func (ew *errWriter) writeString(buf string) {
 	if ew.err != nil {
 		return
 	}
@@ -68,19 +81,21 @@ func syncSource(source Source) error {
 		}
 
 		fmt.Println(p.Title())
-		fmt.Println(p.FileName())
+		fmt.Println(source.FileName(p))
 
-		filename := p.FileName()
+		filename := source.FileName(p)
 		var f *os.File
 		var err error
 		if exist(filename) {
 			f, err = os.OpenFile(filename, os.O_WRONLY, 0644)
 			if err != nil {
+				fmt.Println(err.Error())
 				return nil
 			}
 		} else {
 			f, err = os.Create(filename)
 			if err != nil {
+				fmt.Println(err.Error())
 				return nil
 			}
 		}
@@ -88,18 +103,18 @@ func syncSource(source Source) error {
 		wf := bufio.NewWriter(f)
 		ew := &errWriter{w: wf}
 
-		ew.WriteString("---\n")
-		ew.WriteString(fmt.Sprintf("title: %s\n", p.Title()))
-		ew.WriteString(fmt.Sprintf("date: %s\n", p.CreatedAt().String()))
-		ew.WriteString(fmt.Sprintf("lastmod: %s\n", p.UpdatedAt().String()))
+		ew.writeString("---\n")
+		ew.writeString(fmt.Sprintf("title: %s\n", p.Title()))
+		ew.writeString(fmt.Sprintf("date: %s\n", p.CreatedAt().String()))
+		ew.writeString(fmt.Sprintf("lastmod: %s\n", p.UpdatedAt().String()))
 		tags := p.Tags()
 		if tags != nil && len(tags) > 0 {
-			ew.WriteString(fmt.Sprintf("tags: %s\n", strings.Join(tags, ",")))
+			ew.writeString(fmt.Sprintf("tags: %s\n", strings.Join(tags, ",")))
 		}
-		ew.WriteString("---\n")
-		ew.WriteString(string(p.Content()))
-		ew.WriteString("\n")
-		ew.WriteString("\n")
+		ew.writeString("---\n")
+		ew.writeString(string(p.Content()))
+		ew.writeString("\n")
+		ew.writeString("\n")
 
 		if ew.err != nil {
 			fmt.Printf("Write err %s\n", ew.err.Error())

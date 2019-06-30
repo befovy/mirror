@@ -11,29 +11,16 @@ type PageInfo struct {
 	EndCursor       githubql.String
 }
 
-type IssueInRepo struct {
-	Repository struct {
-		Name        githubql.String
-		Description githubql.String
-		CreatedAt   githubql.DateTime
-		Issues      struct {
-			TotalCount githubql.Int
-			Nodes      []Issue
-			PageInfo   PageInfo
-		} `graphql:"issues(first: $first, after: $after, states: $states)"`
-	} `graphql:"repository(owner: $owner, name: $name)"`
+type Label struct {
+	Color       githubql.String
+	IsDefault   githubql.Boolean
+	Name        githubql.String
+	Description githubql.String
 }
 
-func (i *IssueInRepo) HasNextPage() bool {
-	return (bool)(i.Repository.Issues.PageInfo.HasNextPage)
-}
-
-func (i *IssueInRepo) NextCursor() githubql.String {
-	return i.Repository.Issues.PageInfo.EndCursor
-}
-
-func (i *IssueInRepo) Issues() []Issue {
-	return i.Repository.Issues.Nodes
+type IssueComment struct {
+	Body            githubql.String
+	ViewerDidAuthor githubql.Boolean
 }
 
 type IssueEdge struct {
@@ -42,8 +29,8 @@ type IssueEdge struct {
 }
 
 type Issue struct {
-	ICreatedAt githubql.DateTime `graphql:"createdAt"`
-	Author     struct {
+	CreatedAt githubql.DateTime
+	Author    struct {
 		Login githubql.String
 	}
 	Number          githubql.Int
@@ -53,8 +40,8 @@ type Issue struct {
 	Locked          githubql.Boolean
 	PublishedAt     githubql.DateTime
 	State           githubql.IssueState
-	ITitle          githubql.String   `graphql:"title"`
-	IUpdatedAt      githubql.DateTime `graphql:"updatedAt"`
+	Title           githubql.String
+	UpdatedAt       githubql.DateTime
 	ViewerDidAuthor githubql.Boolean
 	ResourcePath    githubql.URI
 
@@ -64,15 +51,41 @@ type Issue struct {
 	} `graphql:"labels(first: 100, after: null)"`
 	Comments struct {
 		TotalCount githubql.Int
+		PageInfo   PageInfo
 		Nodes      []IssueComment
-	} `graphql:"comments(first: 100, after: null)"`
+	} `graphql:"comments(first: $csFirst, after: $csAfter)"`
 }
 
-func (i *Issue) IsPage() bool {
+type IssueInRepo struct {
+	Repository struct {
+		Name        githubql.String
+		Description githubql.String
+		CreatedAt   githubql.DateTime
+		Issues      struct {
+			TotalCount githubql.Int
+			Edges    []IssueEdge
+			PageInfo PageInfo
+		} `graphql:"issues(first: $first, after: $after, states: $states)"`
+	} `graphql:"repository(owner: $owner, name: $name)"`
+}
+
+func (i *IssueInRepo) hasNextPage() bool {
+	return (bool)(i.Repository.Issues.PageInfo.HasNextPage)
+}
+
+func (i *IssueInRepo) nextCursor() githubql.String {
+	return i.Repository.Issues.PageInfo.EndCursor
+}
+
+func (i *IssueInRepo) issueEdges() []IssueEdge {
+	return i.Repository.Issues.Edges
+}
+
+func (i *Issue) isPage() bool {
 	return i.hasMirrorLabel("PAGE")
 }
 
-func (i *Issue) IsPost() bool {
+func (i *Issue) isPost() bool {
 	return i.hasMirrorLabel("POST")
 }
 
@@ -89,7 +102,7 @@ func (i *Issue) hasMirrorLabel(tag string) bool {
 	return post
 }
 
-func (i *Issue) RealLabels() []Label {
+func (i *Issue) realLabels() []Label {
 	labels := make([]Label, 0)
 	for _, l := range i.Labels.Nodes {
 		if string(l.Description) != mirrorLabelTag {
@@ -97,16 +110,4 @@ func (i *Issue) RealLabels() []Label {
 		}
 	}
 	return labels
-}
-
-type Label struct {
-	//Color       githubql.String
-	//IsDefault   githubql.Boolean
-	Name        githubql.String
-	Description githubql.String
-}
-
-type IssueComment struct {
-	Body            githubql.String
-	ViewerDidAuthor githubql.Boolean
 }

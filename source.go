@@ -39,7 +39,6 @@ func newConfig(filename string) ([]SourceConfig, error) {
 //
 // 抽象的一篇文章（博文）
 type Post interface {
-	FileName() string
 	Title() string
 	Tags() []string
 	CreatedAt() time.Time
@@ -51,5 +50,13 @@ type Post interface {
 //
 // 博文集合的抽象接口， 迭代器模式
 type Source interface {
+	// return next post, or nil if no more
+	//
+	// 返回下一篇文章，如果没有更多内容返回 nil
 	Next() Post
+
+	// full filename (with path) to save the content
+	//
+	// 包含路径的文件名，用于保存博文
+	FileName(post Post) string
 }
