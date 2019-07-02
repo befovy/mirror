@@ -1,0 +1,12 @@
+github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
+github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/shurcooL/githubql v0.0.0-20180322230020-d8297a7d5a84 h1:8+40RpefiNOBi+qIKoKeEZszmHmfIljsp4DMUgmqnGQ=
+github.com/shurcooL/githubql v0.0.0-20180322230020-d8297a7d5a84/go.mod h1:iaroGwWDfkuasmvRaqq1Dlq6EQhPsZrg8srZhBQHA8A=
+github.com/shurcooL/go v0.0.0-20180410215514-47fa5b7ceee6 h1:WqsobZNyIWv3xVI0pgkziPvpqny4wZvufTBYPzOlQNw=
+github.com/shurcooL/go v0.0.0-20180410215514-47fa5b7ceee6/go.mod h1:TDJrrUr11Vxrven61rcy3hJMUqaf/CLWYhHNPmT14Lk=
+github.com/shurcooL/graphql v0.0.0-20180302221403-3d276b9dcc6b h1:g7taRn8UFRnLp1YqHP+ScI5hc1+2P/jrBm8wpsG9Ies=
+github.com/shurcooL/graphql v0.0.0-20180302221403-3d276b9dcc6b/go.mod h1:AuYgA5Kyo4c7HfUmvRGs/6rGlMMV/6B1bVnB9JxJEEg=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
+gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
